@@ -153,3 +153,14 @@ Heartbeat lastSeen cada 20 s ◄──► cierre: estado offline + cancelar list
 | P5 Otra instancia recibe en vivo | `onSnapshot` (dos pestañas / dos equipos). |
 | P6 Mensaje vacío rechazado | Validación en cliente + reglas de Firestore (`size() > 0`). |
 | P7 Cambiar de conversación | Se cancela el listener anterior antes de suscribir el nuevo. |
+
+---
+
+## 4. Nota de decisión: por qué identificador escrito y no Auth anónimo
+
+Se evaluó Auth anónimo de Firebase (uid automático) y se descartó por dos motivos verificables:
+
+1. **Dos pestañas del mismo navegador comparten la sesión anónima** (probado: dos `signInAnonymously` consecutivos devuelven el **mismo** uid). Eso rompría la prueba P1 con el escenario más habitual de demostración (dos pestañas) y obligaría a dos equipos distintos para probar.
+2. El taller dice textualmente: *"para esta sesión se permite identificar a los usuarios mediante un nombre e identificador de prueba"* y pone el ejemplo `u001 → Ana`. Con ids escritos no se depende de la configuración de Authentication, se cumple P1 con dos pestañas y el identificador sigue diferenciado del nombre visible.
+
+Coste de la decisión: sin Auth no se puede verificar criptográficamente la identidad; las reglas validan la **estructura** de los datos y la base debe permanecer en modo de prueba durante la sesión (limitación documentada, aceptada por el alcance del taller).
