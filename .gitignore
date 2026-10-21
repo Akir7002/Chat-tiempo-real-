@@ -1,0 +1,18 @@
+node_modules/
+
+# Archivos generados por herramientas y ejecución local
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+.DS_Store
+Thumbs.db
+
+# Variables de entorno y credenciales locales
+.env
+.env.*
+!.env.example
+
+# Scripts temporales de inspección local
+/_dump.mjs
+/_probe.mjs
+/_test.mjs

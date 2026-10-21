@@ -1,0 +1,13 @@
+{
+    "name": "colegio-chat",
+    "type": "module",
+    "scripts": {
+        "chat:web": "node server.js",
+        "start": "node server.js",
+        "pruebas": "node pruebas.mjs",
+        "limpiar": "node limpiar.mjs"
+    },
+    "dependencies": {
+        "firebase": "^13.0.0"
+    }
+}

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat del Colegio</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- Zona de identificación -->
+    <section id="acceso" class="acceso">
+        <form id="form-acceso" class="acceso-caja" autocomplete="off">
+            <h1>&#128172; Chat del Colegio</h1>
+            <p>Identifícate con un identificador único y un nombre visible. Ejemplos: <b>u001 → Ana</b>, <b>u002 → Carlos</b>.</p>
+            <label for="usuario-id">Identificador único</label>
+            <input id="usuario-id" type="text" placeholder="Ej: u001" maxlength="20" autofocus>
+            <label for="nombre">Nombre visible</label>
+            <input id="nombre" type="text" placeholder="Ej: Ana" maxlength="24">
+            <p id="acceso-aviso" class="aviso acceso-aviso oculto"></p>
+            <button type="submit">Entrar al chat</button>
+        </form>
+    </section>
+
+    <!-- Pantalla principal -->
+    <div id="chat" class="chat oculto">
+
+        <header class="cabecera">
+            <div class="identidad">
+                <span class="logo">&#128172; Chat del Colegio</span>
+                <span id="mi-identidad" class="mi-identidad"></span>
+            </div>
+            <div class="conexion">
+                <i id="punto" class="punto"></i>
+                <span id="estado-texto">Conectando&hellip;</span>
+                <button id="btn-salir" type="button" class="btn-mini">Salir</button>
+            </div>
+        </header>
+
+        <div class="cuerpo">
+
+            <!-- Zona 2: lista de usuarios -->
+            <aside class="panel-usuarios">
+                <h2>Usuarios (<span id="conteo">0</span>)</h2>
+                <ul id="lista-usuarios" class="lista-usuarios"></ul>
+                <p id="lista-vacia" class="panel-vacio">
+                    Aún no hay otros usuarios.<br>
+                    Abre una segunda pestaña con otro nombre para probar el chat en tiempo real.
+                </p>
+            </aside>
+
+            <section class="panel-conversacion">
+                <div id="conversacion-titulo" class="conversacion-titulo">
+                    Selecciona un usuario para comenzar
+                </div>
+
+                <!-- Zona 3: área de mensajes -->
+                <main id="mensajes" class="mensajes" aria-live="polite"></main>
+
+                <p id="aviso" class="aviso oculto"></p>
+
+                <!-- Zona 4: texto + enviar -->
+                <form id="form-mensaje" class="entrada" autocomplete="off">
+                    <input id="texto" type="text" placeholder="Escribe un mensaje&hellip;" maxlength="500">
+                    <button type="submit">Enviar</button>
+                </form>
+            </section>
+        </div>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+</body>
+</html>

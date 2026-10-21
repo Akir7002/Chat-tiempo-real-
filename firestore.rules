@@ -1,0 +1,39 @@
+rules_version = '2';
+
+// El taller NO exige autenticación: las reglas validan la ESTRUCTURA de los datos,
+// no la identidad (limitación documentada en diseno-chat.md).
+// Si la base está en "modo de prueba" de Firebase, aplica sola hasta que venza.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /usuarios/{uid} {
+      allow read: if true;
+      allow create, update: if request.resource.data.nombre is string
+                             && request.resource.data.nombre.size() > 0
+                             && request.resource.data.nombre.size() <= 24
+                             && request.resource.data.estado is string
+                             && request.resource.data.estado in ["online", "offline"];
+      allow delete: if false;
+    }
+
+    match /conversaciones/{convId} {
+      allow read: if true;
+      allow create: if request.resource.data.participantes is list
+                     && request.resource.data.participantes.size() == 2
+                     && request.resource.data.tipo == "privada";
+      allow update: if resource.data.participantes == request.resource.data.participantes
+                    && request.resource.data.ultimoMensaje is string;
+      allow delete: if false;
+    }
+
+    match /conversaciones/{convId}/mensajes/{msgId} {
+      allow read: if true;
+      allow create: if request.resource.data.emisorId is string
+                     && request.resource.data.texto is string
+                     && request.resource.data.texto.size() > 0
+                     && request.resource.data.texto.size() <= 500;
+      allow update, delete: if false;
+    }
+  }
+}
