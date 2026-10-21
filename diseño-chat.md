@@ -2,7 +2,7 @@
 
 - **Alternativa elegida:** B) Chat con interfaz web (HTML, CSS, JavaScript).
 - **Proyecto Firebase:** `chat-18fba` (propio del equipo).
-- **Identidad:** Auth anónimo de Firebase → `uid` = identificador único (permitido por el alcance: "identidad autenticada"); el **nombre visible** lo escribe el usuario y es independiente del identificador.
+- **Identidad:** identificador de prueba escrito por el usuario (ej. `u001`) + nombre visible (ej. `Ana`). El taller permite identificadores previamente creados ("u001 → Ana") y **no exige autenticación**. El identificador vive en el id del documento y es independiente del nombre visible (requisito del alcance). Justificación de por qué no se usó Auth: ver la nota final.
 
 ---
 
@@ -10,7 +10,7 @@
 
 ### 1.1 `usuarios/{uid}`
 
-El **id del documento es el identificador único** del usuario.
+El **id del documento es el identificador único** del usuario, escrito por él al entrar (`u001`, `u002`…; validado: 3–20 caracteres, letras/números/`_`/`-`).
 
 | Campo    | Tipo | Obligatorio | Justificación (consulta u operación que habilita) |
 |---       |---    |---          |---                                               |
@@ -20,6 +20,7 @@ El **id del documento es el identificador único** del usuario.
 | `creadoEn` | timestamp | No | Auditoría del registro. |
 
 **Registro sin duplicados (P1):** `setDoc(doc(usuarios, uid), datos)` — ID conocido ⇒ ejecutar N veces nunca duplica usuarios.
+**Limitación aceptada:** si dos personas escriben el mismo id, la segunda sobrescribe la primera; es la contraparte de los identificadores de prueba que el taller acepta (no exige autenticación).
 
 ### 1.2 `conversaciones/{convId}`
 
@@ -145,7 +146,7 @@ Heartbeat lastSeen cada 20 s ◄──► cierre: estado offline + cancelar list
 
 | Prueba | Cumplimiento |
 |---|---|
-| P1 Dos usuarios, ids únicos | Auth anónimo genera un `uid` distinto por sesión; `setDoc` por id ⇒ sin duplicados. |
+| P1 Dos usuarios, ids únicos | Cada usuario escribe su id (`u001`, `u002`); `setDoc` por id ⇒ sin duplicados. Prueba automatizada: `pnpm pruebas`. |
 | P2 Usuarios disponibles | `where("estado","==","online")` + umbral de `lastSeen`. |
 | P3 Seleccionar destinatario | Clic en la lista ⇒ clave canónica de conversación. |
 | P4 Mensaje almacenado | `addDoc` en la subcolección; verificado en Firestore. |
