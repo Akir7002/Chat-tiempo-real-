@@ -18,7 +18,11 @@ const TIPOS = {
 const servidor = createServer(async (req, res) => {
     try {
         let ruta = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
-        if (ruta === "/") ruta = "/src/web/index.html";
+        if (ruta === "/") {
+            res.writeHead(302, { Location: "/src/web/index.html" });
+            res.end();
+            return;
+        }
 
         const absoluta = normalize(join(RAIZ, ruta));
         if (!absoluta.startsWith(RAIZ)) {

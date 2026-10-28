@@ -1,13 +1,4 @@
-import {
-    addDoc,
-    collection,
-    doc,
-    onSnapshot,
-    orderBy,
-    query,
-    serverTimestamp,
-    updateDoc
-} from "firebase/firestore";
+import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, writeBatch } from "firebase/firestore";
 import { db } from "./firebase.js";
 
 export function escucharMensajes(conversacionId, alActualizar, alError) {
@@ -39,16 +30,19 @@ export async function enviarMensaje({ conversacionId, emisorId, texto }) {
     if (!limpio) return { ok: false, motivo: "El mensaje no puede estar vacío" };
     if (!conversacionId) return { ok: false, motivo: "Selecciona un usuario para conversar" };
 
-    await addDoc(collection(db, "conversaciones", conversacionId, "mensajes"), {
+    const lote = writeBatch(db);
+
+    lote.set(doc(collection(db, "conversaciones", conversacionId, "mensajes")), {
         emisorId,
         texto: limpio.slice(0, 500),
         creadoEn: serverTimestamp()
     });
-
-    await updateDoc(doc(db, "conversaciones", conversacionId), {
+    lote.update(doc(db, "conversaciones", conversacionId), {
         ultimoMensaje: limpio.slice(0, 80),
         actualizadaEn: serverTimestamp()
-    }).catch(() => {});
+    });
+
+    await lote.commit();
 
     return { ok: true };
 }

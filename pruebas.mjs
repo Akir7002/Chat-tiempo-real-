@@ -1,7 +1,7 @@
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { addDoc, collection, doc, getDocs, query, serverTimestamp, setDoc, where } from "firebase/firestore";
 import { db } from "./src/firebase.js";
 import { registrarUsuario, escucharUsuarios } from "./src/usuarios.js";
-import { claveConversacion, abrirConversacion } from "./src/conversaciones.js";
+import { claveConversacion, abrirConversacion, obtenerOCrearConversacion } from "./src/conversaciones.js";
 import { escucharMensajes, enviarMensaje } from "./src/mensajes.js";
 
 const fallos = [];
@@ -91,5 +91,52 @@ ok("P7", !trasCambio.some((m) => m.texto === "no-me-deben-ver"),
     "cancelar el listener evita mezclar conversaciones");
 cancelar3();
 
-console.log("\n" + (fallos.length ? "FALLARON: " + fallos.join(", ") : "TODAS LAS PRUEBAS OK (P1–P7)"));
+// P8 (extra): concurrencia, dos clientes abren la misma conversación a la vez
+const sufijo = Date.now();
+const uidX = "conc" + sufijo + "a";
+const uidY = "conc" + sufijo + "b";
+
+const simultaneas = await Promise.all([
+    obtenerOCrearConversacion({ uidPropio: uidX, uidOtro: uidY }),
+    obtenerOCrearConversacion({ uidPropio: uidY, uidOtro: uidX })
+]);
+
+const idsDistintos = new Set(simultaneas.map((r) => r.id));
+const quienCreo = simultaneas.filter((r) => r.creada).length;
+const docsConc = await getDocs(
+    query(collection(db, "conversaciones"), where("participantes", "array-contains", uidX))
+);
+
+ok("P8", idsDistintos.size === 1 && docsConc.size === 1 && quienCreo === 1,
+    "2 aperturas simultáneas ⇒ " + docsConc.size + " documento, creado por " + quienCreo + " de 2 llamadas");
+
+// P9 (extra): las reglas rechazan escrituras que rompen el modelo
+const rechazada = async (accion) => {
+    try {
+        await accion();
+        return false;
+    } catch (error) {
+        return error.code === "permission-denied";
+    }
+};
+
+const emisorAjeno = await rechazada(() =>
+    addDoc(collection(db, "conversaciones", idPorAna, "mensajes"), {
+        emisorId: "intruso",
+        texto: "no debería poder escribir aquí",
+        creadoEn: serverTimestamp()
+    })
+);
+const idFalso = await rechazada(() =>
+    setDoc(doc(db, "conversaciones", "id-inventado"), {
+        participantes: ["u001", "u002"],
+        tipo: "privada",
+        creadaEn: serverTimestamp(),
+        actualizadaEn: serverTimestamp(),
+        ultimoMensaje: ""
+    })
+);
+ok("P9", emisorAjeno && idFalso,
+    "emisor ajeno rechazado: " + emisorAjeno + "; ID no canónico rechazado: " + idFalso);
+console.log("\n" + (fallos.length ? "FALLARON: " + fallos.join(", ") : "TODAS LAS PRUEBAS OK (P1–P9)"));
 process.exit(fallos.length ? 1 : 0);

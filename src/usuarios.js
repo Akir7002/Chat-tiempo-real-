@@ -1,20 +1,20 @@
-import { collection, doc, onSnapshot, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDoc, onSnapshot, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase.js";
 
 const INTERVALO_PULSO = 20000;
 const UMBRAL_OFFLINE = 60000;
 
+
+export async function obtenerUsuario(uid){
+    const documento = await getDoc(doc(db, "usuarios", uid)); 
+    return documento.exists() ? documento.data() : null;
+}
+
 export async function registrarUsuario({ uid, nombre }) {
-    await setDoc(
-        doc(db, "usuarios", uid),
-        {
-            nombre,
-            estado: "online",
-            lastSeen: serverTimestamp(),
-            creadoEn: serverTimestamp()
-        },
-        { merge: true }
-    );
+    const existente = await getDoc(doc(db, "usuarios", uid));
+    const datos = { nombre, estado: "online", lastSeen: serverTimestamp() };
+    if (!existente.exists()) datos.creadoEn = serverTimestamp();
+    await setDoc(doc(db, "usuarios", uid), datos, { merge: true });
 }
 
 export function iniciarCorazon({ uid }) {
@@ -59,7 +59,7 @@ export function escucharUsuarios(alActualizar, alError) {
                     enLinea: datos.estado === "online" && estaReciente(datos.lastSeen, ahora)
                 };
             });
-            alActualizar(usuarios);
+            alActualizar(usuarios, snapshot.metadata.fromCache);;
         },
         (error) => {
             console.error("Error en el listener de usuarios:", error.code ?? error.message);

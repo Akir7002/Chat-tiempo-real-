@@ -2,6 +2,7 @@
     "name": "colegio-chat",
     "type": "module",
     "scripts": {
+        "consola": "node src/consola/chat.js",
         "chat:web": "node server.js",
         "start": "node server.js",
         "pruebas": "node pruebas.mjs",

@@ -1,38 +1,52 @@
 rules_version = '2';
 
-// El taller NO exige autenticación: las reglas validan la ESTRUCTURA de los datos,
-// no la identidad (limitación documentada en diseno-chat.md).
-// Si la base está en "modo de prueba" de Firebase, aplica sola hasta que venza.
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
     match /usuarios/{uid} {
       allow read: if true;
-      allow create, update: if request.resource.data.nombre is string
+      allow create, update: if uid.matches('^[A-Za-z0-9_-]{3,20}$')
+                             && request.resource.data.keys().hasOnly(['nombre', 'estado', 'lastSeen', 'creadoEn'])
+                             && request.resource.data.nombre is string
                              && request.resource.data.nombre.size() > 0
                              && request.resource.data.nombre.size() <= 24
                              && request.resource.data.estado is string
-                             && request.resource.data.estado in ["online", "offline"];
+                             && request.resource.data.estado in ['online', 'offline'];
       allow delete: if false;
     }
 
     match /conversaciones/{convId} {
       allow read: if true;
-      allow create: if request.resource.data.participantes is list
-                     && request.resource.data.participantes.size() == 2
-                     && request.resource.data.tipo == "privada";
-      allow update: if resource.data.participantes == request.resource.data.participantes
-                    && request.resource.data.ultimoMensaje is string;
+
+      allow create: if request.resource.data.keys().hasOnly(['participantes', 'tipo', 'creadaEn', 'actualizadaEn', 'ultimoMensaje'])
+                    && request.resource.data.tipo == 'privada'
+                    && request.resource.data.participantes is list
+                    && request.resource.data.participantes.size() == 2
+                    && request.resource.data.participantes[0] < request.resource.data.participantes[1]
+                    && convId == request.resource.data.participantes[0] + '_' + request.resource.data.participantes[1]
+                    && request.resource.data.creadaEn == request.time
+                    && request.resource.data.actualizadaEn == request.time
+                    && request.resource.data.ultimoMensaje == '';
+
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ultimoMensaje', 'actualizadaEn'])
+                    && request.resource.data.ultimoMensaje is string
+                    && request.resource.data.ultimoMensaje.size() <= 80
+                    && request.resource.data.actualizadaEn == request.time;
+
       allow delete: if false;
     }
 
     match /conversaciones/{convId}/mensajes/{msgId} {
       allow read: if true;
-      allow create: if request.resource.data.emisorId is string
+
+      allow create: if request.resource.data.keys().hasOnly(['emisorId', 'texto', 'creadoEn'])
+                     && request.resource.data.emisorId is string
+                     && request.resource.data.emisorId in get(/databases/$(database)/documents/conversaciones/$(convId)).data.participantes
                      && request.resource.data.texto is string
                      && request.resource.data.texto.size() > 0
-                     && request.resource.data.texto.size() <= 500;
+                     && request.resource.data.texto.size() <= 500
+                     && request.resource.data.creadoEn == request.time;
+
       allow update, delete: if false;
     }
   }
