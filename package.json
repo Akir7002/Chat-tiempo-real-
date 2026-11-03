@@ -1,13 +1,33 @@
 {
-    "name": "colegio-chat",
-    "type": "module",
-    "scripts": {
-        "chat:web": "node server.js",
-        "start": "node server.js",
-        "pruebas": "node pruebas.mjs",
-        "limpiar": "node limpiar.mjs"
-    },
-    "dependencies": {
-        "firebase": "^13.0.0"
-    }
+  "name": "colegio-chat",
+  "version": "1.0.0",
+  "description": "Sistema de Chat en Tiempo Real con Firebase Firestore e Integración de Modelos Locales IA (Ollama)",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "chat:web": "node server.js",
+    "pruebas": "node pruebas.mjs",
+    "limpiar": "node limpiar.mjs",
+    "ia:bot": "node backend/server.js",
+    "ia:embeddings": "node scripts/generar-embeddings.js",
+    "ia:buscar": "node scripts/buscar-vector.js"
+  },
+  "keywords": [
+    "chat",
+    "firebase",
+    "firestore",
+    "ollama",
+    "mongodb",
+    "realtime"
+  ],
+  "author": "David Mauricio Perez",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^18.0.8",
+    "firebase": "^13.0.0",
+    "firebase-admin": "^14.5.0",
+    "mongodb": "^7.7.0",
+    "ollama": "^0.6.4"
+  }
 }

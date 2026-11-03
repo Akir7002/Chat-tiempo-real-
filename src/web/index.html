@@ -1,82 +1,198 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat del Colegio</title>
-    <link rel="stylesheet" href="./styles.css">
-    <script type="importmap">
-        {
-            "imports": {
-                "firebase/app": "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js",
-                "firebase/auth": "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js",
-                "firebase/firestore": "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js"
-            }
-        }
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Chat - Firestore en Tiempo Real</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="app-container">
+    <!-- BARRA LATERAL (Sidebar) -->
+    <aside class="sidebar">
+      <!-- Encabezado con información del usuario conectado -->
+      <header class="user-profile-header">
+        <div class="profile-info">
+          <div class="avatar" id="myAvatar">
+            ?
+            <span class="status-dot online" id="myStatusDot"></span>
+          </div>
+          <div class="profile-meta">
+            <h3 id="myUserName">Cargando usuario...</h3>
+            <span class="uid-tag" id="myUserId">ID: --</span>
+          </div>
+          <button id="btnToggleTheme" class="btn-theme-toggle" title="Cambiar entre Modo Claro y Oscuro">
+            <span id="themeIcon">🌙</span>
+          </button>
+        </div>
+        <div class="quick-switch">
+          <button id="btnSwitchAna" title="Entrar como Ana">Ana (u001)</button>
+          <button id="btnSwitchCarlos" title="Entrar como Carlos">Carlos (u002)</button>
+          <button id="btnSwitchMaria" title="Entrar como María">María (u003)</button>
+          <button id="btnCustomLogin" title="Ingresar otro ID/Nombre">Otro...</button>
+          <button id="btnLogout" class="btn-logout" title="Desconectar y cambiar de usuario">Salir</button>
+        </div>
+      </header>
 
-    <!-- Zona de identificación -->
-    <section id="acceso" class="acceso">
-        <form id="form-acceso" class="acceso-caja" autocomplete="off">
-            <h1>&#128172; Chat del Colegio</h1>
-            <p>Identifícate con un identificador único y un nombre visible. Ejemplos: <b>u001 → Ana</b>, <b>u002 → Carlos</b>.</p>
-            <label for="usuario-id">Identificador único</label>
-            <input id="usuario-id" type="text" placeholder="Ej: u001" maxlength="20" autofocus>
-            <label for="nombre">Nombre visible</label>
-            <input id="nombre" type="text" placeholder="Ej: Ana" maxlength="24">
-            <p id="acceso-aviso" class="aviso acceso-aviso oculto"></p>
-            <button type="submit">Entrar al chat</button>
-        </form>
-    </section>
+      <!-- Pestañas para alternar entre Usuarios (1 a 1) y Salas Grupales -->
+      <nav class="section-tabs">
+        <button class="tab-btn active" id="tabDirects">
+          Chats Privados (1 a 1)
+        </button>
+        <button class="tab-btn" id="tabGroups">
+          Salas Grupales
+        </button>
+      </nav>
 
-    <!-- Pantalla principal -->
-    <div id="chat" class="chat oculto">
+      <!-- Lista de Contactos / Conversaciones disponibles -->
+      <main class="contacts-list-container">
+        <!-- Sección de Chats Privados -->
+        <div id="directsSection">
+          <div class="list-section-header">
+            <span>Usuarios disponibles</span>
+            <span id="userCountBadge" style="font-size: 0.7rem; font-weight: normal;">0 disponibles</span>
+          </div>
+          <div id="usersList">
+            <!-- Se poblará dinámicamente con onSnapshot -->
+          </div>
+        </div>
 
-        <header class="cabecera">
-            <div class="identidad">
-                <span class="logo">&#128172; Chat del Colegio</span>
-                <span id="mi-identidad" class="mi-identidad"></span>
+        <!-- Sección de Salas Grupales -->
+        <div id="groupsSection" style="display: none;">
+          <div class="list-section-header">
+            <span>Salas de chat</span>
+            <button class="btn-create-group" id="btnOpenCreateGroup">+ Nueva Sala</button>
+          </div>
+          <div id="groupsList">
+            <!-- Se poblará dinámicamente con onSnapshot -->
+          </div>
+        </div>
+      </main>
+
+      <!-- Guía de verificación de requisitos del taller -->
+      <footer class="test-suite-guide">
+        <details>
+          <summary>Verificación de Rúbrica (P1 - P7)</summary>
+          <ul>
+            <li><strong>P1:</strong> Registrar usuarios con identificadores únicos estables.</li>
+            <li><strong>P2:</strong> Consultar usuarios disponibles (excluyendo al propio).</li>
+            <li><strong>P3:</strong> Abrir conversación determinista sin duplicados.</li>
+            <li><strong>P4:</strong> Almacenar mensajes en Firestore (subcolección mensajes).</li>
+            <li><strong>P5:</strong> Recepción instantánea en tiempo real sin recargar página.</li>
+            <li><strong>P6:</strong> Validación y rechazo de mensajes vacíos o de puros espacios.</li>
+            <li><strong>P7:</strong> Cambio de conversación desuscribiendo listeners previos.</li>
+          </ul>
+        </details>
+      </footer>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL DEL CHAT -->
+    <section class="chat-main">
+      <!-- Estado vacío cuando no hay conversación seleccionada -->
+      <div class="chat-empty-state" id="emptyState">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <h3>Selecciona una conversación</h3>
+        <p>Elige un usuario disponible para un chat privado o únete a una sala grupal.</p>
+      </div>
+
+      <!-- Vista activa del chat -->
+      <div id="activeChatView" style="display: none; flex-direction: column; height: 100%;">
+        <!-- Cabecera de la conversación activa -->
+        <header class="chat-header">
+          <div class="chat-header-info">
+            <div class="avatar" id="activeChatAvatar">?</div>
+            <div class="chat-header-meta">
+              <h2 id="activeChatTitle">Destinatario</h2>
+              <p id="activeChatSubtitle">En línea</p>
             </div>
-            <div class="conexion">
-                <i id="punto" class="punto"></i>
-                <span id="estado-texto">Conectando&hellip;</span>
-                <button id="btn-salir" type="button" class="btn-mini">Salir</button>
-            </div>
+          </div>
+          <div id="activeChatExtra" style="font-size: 0.75rem; color: var(--text-secondary);">
+            Tipo: <span id="activeChatTypeTag" style="font-weight: 600;">Privada</span>
+          </div>
         </header>
 
-        <div class="cuerpo">
-
-            <!-- Zona 2: lista de usuarios -->
-            <aside class="panel-usuarios">
-                <h2>Usuarios (<span id="conteo">0</span>)</h2>
-                <ul id="lista-usuarios" class="lista-usuarios"></ul>
-                <p id="lista-vacia" class="panel-vacio">
-                    Aún no hay otros usuarios.<br>
-                    Abre una segunda pestaña con otro nombre para probar el chat en tiempo real.
-                </p>
-            </aside>
-
-            <section class="panel-conversacion">
-                <div id="conversacion-titulo" class="conversacion-titulo">
-                    Selecciona un usuario para comenzar
-                </div>
-
-                <!-- Zona 3: área de mensajes -->
-                <main id="mensajes" class="mensajes" aria-live="polite"></main>
-
-                <p id="aviso" class="aviso oculto"></p>
-
-                <!-- Zona 4: texto + enviar -->
-                <form id="form-mensaje" class="entrada" autocomplete="off">
-                    <input id="texto" type="text" placeholder="Escribe un mensaje&hellip;" maxlength="500">
-                    <button type="submit">Enviar</button>
-                </form>
-            </section>
+        <!-- Mensajes recibidos / enviados en tiempo real -->
+        <div class="messages-container" id="messagesContainer">
+          <!-- Burbujas inyectadas por app.js -->
         </div>
-    </div>
 
-    <script type="module" src="./app.js"></script>
+        <!-- Barra inferior para redactar y enviar mensaje -->
+        <footer class="chat-input-bar">
+          <input 
+            type="text" 
+            id="messageInput" 
+            placeholder="Escribe un mensaje aquí..." 
+            autocomplete="off"
+          />
+          <button class="btn-send" id="btnSend">
+            <span>Enviar</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </footer>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal para Identificación / Registro de Usuario -->
+  <div class="modal-overlay" id="userLoginModal" style="display: none;">
+    <div class="modal-box">
+      <h2>Identificación de Usuario</h2>
+      <p>Ingresa un identificador único y un nombre visible para probar la aplicación de mensajería.</p>
+      
+      <div class="form-group">
+        <label for="inputUserId">Identificador Único (ID):</label>
+        <input type="text" id="inputUserId" placeholder="Ej: u001, u002, est_juan" />
+      </div>
+
+      <div class="form-group">
+        <label for="inputUserName">Nombre Visible:</label>
+        <input type="text" id="inputUserName" placeholder="Ej: Ana María, Carlos Ruiz" />
+      </div>
+
+      <div style="margin-top: 15px;">
+        <p style="font-size: 0.75rem; margin-bottom: 6px;">O usa uno de prueba del taller:</p>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn-secondary" onclick="setPreset('u001', 'Ana')">u001 (Ana)</button>
+          <button type="button" class="btn-secondary" onclick="setPreset('u002', 'Carlos')">u002 (Carlos)</button>
+          <button type="button" class="btn-secondary" onclick="setPreset('u003', 'María')">u003 (María)</button>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-primary" id="btnConfirmLogin">Entrar al Chat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Crear Nueva Sala Grupal -->
+  <div class="modal-overlay" id="createGroupModal" style="display: none;">
+    <div class="modal-box">
+      <h2>Crear Sala Grupal</h2>
+      <p>Crea un espacio de conversación grupal para los estudiantes.</p>
+      
+      <div class="form-group">
+        <label for="inputGroupName">Nombre de la Sala:</label>
+        <input type="text" id="inputGroupName" placeholder="Ej: Sala General, Proyecto BD2" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" id="btnCancelCreateGroup">Cancelar</button>
+        <button class="btn-primary" id="btnConfirmCreateGroup">Crear Sala</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast flotante para validaciones (P6: mensaje vacío) -->
+  <div class="toast-notice" id="toastNotice">
+    ⚠️ No puedes enviar un mensaje vacío.
+  </div>
+
+  <!-- Script principal de la aplicación -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>

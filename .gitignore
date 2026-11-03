@@ -1,18 +1,33 @@
+# Dependencias
 node_modules/
 
-# Archivos generados por herramientas y ejecución local
-npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-.DS_Store
-Thumbs.db
-
-# Variables de entorno y credenciales locales
+# Entorno y credenciales sensibles (NUNCA subir a Git)
 .env
 .env.*
 !.env.example
+*serviceAccountKey*.json
+credentials*.json
 
-# Scripts temporales de inspección local
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+firebase-debug.log*
+*.log
+
+# Archivos comprimidos y binarios
+*.7z
+*.zip
+*.tar.gz
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Scripts temporales de pruebas locales
 /_dump.mjs
 /_probe.mjs
 /_test.mjs
